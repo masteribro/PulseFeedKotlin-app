@@ -1,20 +1,31 @@
 package com.example.pulse_feed_app_kotlin
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pulse_feed_app_kotlin.ui.screens.HomeScreen
+import com.example.pulse_feed_app_kotlin.ui.theme.Pulse_feed_kotlinTheme
+import com.example.pulse_feed_app_kotlin.viewmodels.HomeViewModel
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+
+        setContent {
+
+
+            Pulse_feed_kotlinTheme {
+
+                val homeViewModel: HomeViewModel = viewModel()
+
+                HomeScreen(viewModel = homeViewModel)
+            }
         }
     }
 }
