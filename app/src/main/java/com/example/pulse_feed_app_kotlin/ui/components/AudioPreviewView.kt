@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,6 +28,7 @@ import com.example.pulse_feed_app_kotlin.viewmodels.HomeViewModel
 fun AudioPreviewView(mediaUrl: String?, viewModel: HomeViewModel) {
     val state by viewModel.state.collectAsState()
     val isPlaying = state is HomeState.AudioPlaying && (state as HomeState.AudioPlaying).isPlaying
+    val isLoading by viewModel.audioService.isLoading.collectAsState()
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -38,18 +40,27 @@ fun AudioPreviewView(mediaUrl: String?, viewModel: HomeViewModel) {
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.25f))
                 .clickable {
+                    if (isLoading) return@clickable
                     mediaUrl ?: return@clickable
                     if (isPlaying) viewModel.pauseAudio()
                     else viewModel.playAudio(mediaUrl)
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = Color.White,
-                modifier = Modifier.size(30.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
 
         Box(

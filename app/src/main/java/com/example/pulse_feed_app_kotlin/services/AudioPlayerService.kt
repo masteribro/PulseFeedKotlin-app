@@ -11,10 +11,14 @@ class AudioPlayerService {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     private var mediaPlayer: MediaPlayer? = null
 
     fun play(url: String) {
         stop()
+        _isLoading.value = true
         mediaPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
@@ -24,14 +28,17 @@ class AudioPlayerService {
             )
             setDataSource(url)
             setOnPreparedListener {
+                _isLoading.value = false
                 start()
                 _isPlaying.value = true
             }
             setOnCompletionListener {
                 _isPlaying.value = false
+                _isLoading.value = false
             }
             setOnErrorListener { _, _, _ ->
                 _isPlaying.value = false
+                _isLoading.value = false
                 true
             }
             prepareAsync()
@@ -53,5 +60,6 @@ class AudioPlayerService {
         }
         mediaPlayer = null
         _isPlaying.value = false
+        _isLoading.value = false
     }
 }
