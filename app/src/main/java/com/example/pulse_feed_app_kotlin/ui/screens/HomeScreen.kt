@@ -31,6 +31,7 @@ import com.example.pulse_feed_app_kotlin.viewmodels.errorMessage
 fun HomeScreen(viewModel: HomeViewModel) {
 
     val state by viewModel.state.collectAsState()
+    val feedItems by viewModel.feedItems.collectAsState()
     Log.d("DEBUG_HOME", "HomeScreen state = ${state::class.simpleName}")
 
     if (state is HomeState.VideoViewing) {
@@ -80,7 +81,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(viewModel.feedItems, key = { it.id.toString() }) { item ->
+            items(feedItems, key = { it.id.toString() }) { item ->
                 FeedCardView(item = item, viewModel = viewModel)
                 Spacer(modifier = Modifier.height(8.dp))
             }

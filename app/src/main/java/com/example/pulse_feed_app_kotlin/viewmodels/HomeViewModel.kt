@@ -5,6 +5,9 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulse_feed_app_kotlin.models.FeedItem
+import com.example.pulse_feed_app_kotlin.models.MediaType
+import com.example.pulse_feed_app_kotlin.network.MediaStorageDto
+import com.example.pulse_feed_app_kotlin.network.RetrofitClient
 import com.example.pulse_feed_app_kotlin.services.AssetDocumentService
 import com.example.pulse_feed_app_kotlin.services.AudioPlayerService
 import com.example.pulse_feed_app_kotlin.services.DocumentService
@@ -32,13 +35,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow<HomeState>(HomeState.Initial)
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
-    val feedItems = FeedItem.sampleItems
+    private val _feedItems = MutableStateFlow<List<FeedItem>>(emptyList())
+    val feedItems: StateFlow<List<FeedItem>> = _feedItems.asStateFlow()
+
+    private val _isFeedLoading = MutableStateFlow(false)
+    val isFeedLoading: StateFlow<Boolean> = _isFeedLoading.asStateFlow()
 
     val audioService = AudioPlayerService()
     private val documentService = DocumentService(application)
     private val assetDocumentService = AssetDocumentService(application)
 
     init {
+        fetchFeedItems()
         viewModelScope.launch {
             audioService.isPlaying.collect { isPlaying ->
                 val current = _state.value
@@ -50,6 +58,50 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    private fun fetchFeedItems() {
+        viewModelScope.launch {
+            _isFeedLoading.value = true
+            try {
+                val items = withContext(Dispatchers.IO) {
+                    RetrofitClient.mediaApiService.getMediaItems()
+                }
+                _feedItems.value = items.map { it.toFeedItem() }
+            } catch (e: Exception) {
+                Log.e("DEBUG_VM", "Failed to fetch feed items", e)
+                _state.value = HomeState.Error("Failed to load feed: ${e.message}")
+            } finally {
+                _isFeedLoading.value = false
+            }
+        }
+    }
+
+    private fun MediaStorageDto.toFeedItem(): FeedItem {
+        val type = when (mediaType.lowercase()) {
+            "video" -> MediaType.VIDEO
+            "audio" -> MediaType.AUDIO
+            "document" -> MediaType.DOCUMENT
+            else -> MediaType.TEXT
+        }
+        val title = when (type) {
+            MediaType.VIDEO -> "VideoChannel"
+            MediaType.AUDIO -> "PodcastDaily"
+            MediaType.DOCUMENT -> "Document"
+            MediaType.TEXT -> "Post"
+        }
+        val fullUrl = if (url.startsWith("/")) {
+            "${RetrofitClient.BASE_URL.trimEnd('/')}$url"
+        } else {
+            url
+        }
+        return FeedItem(
+            type = type,
+            title = title,
+            description = text,
+            mediaUrl = fullUrl.ifEmpty { null },
+            fileName = if (type == MediaType.DOCUMENT) url.substringAfterLast("/") else null
+        )
     }
 
     fun playAudio(url: String) = audioService.play(url)
